@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+// Changed _LoginScreenState to LoginScreenState
+class LoginScreenState extends State<LoginScreen>  {
   final _auth = FirebaseAuth.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -26,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Basic email validation using a simple regex
     final bool isValidEmail = RegExp(
-        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+        r"^[a-zA-Z0-9_.±]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$")
         .hasMatch(email);
 
     if (!isValidEmail) {
@@ -59,7 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = e.message;
       });
-      print('Failed to sign in: ${e.message}');
+
+      // print('Failed to sign in: ${e.message}');
     }
   }
 

@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RegistrationScreen extends StatefulWidget {
+  const RegistrationScreen({super.key}); // Added key, made const
+
   @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
+  // Changed _RegistrationScreenState to RegistrationScreenState
+  RegistrationScreenState createState() => RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+// Changed _RegistrationScreenState to RegistrationScreenState
+class RegistrationScreenState extends State<RegistrationScreen> {
   final _auth = FirebaseAuth.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,7 +31,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     // Basic email validation using a simple regex
     final bool isValidEmail = RegExp(
-            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+            r"^[a-zA-Z0-9_.±]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$") // Using the regex from your initial file content
         .hasMatch(email);
 
     if (!isValidEmail) {
@@ -77,7 +81,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() {
         _errorMessage = e.message;
       });
-      print('Failed to register: ${e.message}');
+
+      // print('Failed to register: ${e.message}');
     }
   }
 

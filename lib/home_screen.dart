@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatelessWidget {
+  HomeScreen({super.key}); // Removed 'const'
+
   final _auth = FirebaseAuth.instance;
 
   @override
@@ -15,7 +17,9 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(Icons.logout),
             onPressed: () async {
               await _auth.signOut();
-              // Navigator.pushReplacementNamed(context, '/login'); // Navigate back to login
+              // Consider how to handle navigation after logout.
+              // For example, to go back to the login screen and prevent going back to home:
+              // Navigator.of(context).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
             },
           ),
         ],
