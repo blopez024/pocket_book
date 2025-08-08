@@ -6,6 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 import 'registration_screen.dart';
 import 'home_screen.dart'; // A screen to show after successful login
+import 'package:pocket_book/app_scaffold.dart';
+import 'package:pocket_book/login_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,27 +22,30 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Firebase Auth Demo',
+      title: 'Pocket Book',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
+        // You can define other theme properties here
       ),
-      // Use a StreamBuilder to listen to authentication state changes
+      // If you are using named routes, ensure '/register' is defined
+      // and update the initial route logic.
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator(); // Or some other loading indicator
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
           if (snapshot.hasData) {
-            return HomeScreen(); // User is logged in
+            return const AppScaffold(); // <-- Go to AppScaffold if logged in
           }
-          return LoginScreen(); // User is not logged in, show login screen
+          return const LoginScreen();   // <-- Go to LoginScreen if not
         },
       ),
       routes: {
-        '/login': (context) => LoginScreen(),
-        '/register': (context) => RegistrationScreen(),
-        '/home': (context) => HomeScreen(),
+        // Ensure your /register route is defined if you use Navigator.pushNamed(context, '/register')
+        '/register': (context) => RegistrationScreen(), // Make sure RegistrationScreen is imported
+        '/login': (context) => const LoginScreen(),
+        '/app': (context) => const AppScaffold(), // Optional: if you want a named route for it
       },
     );
   }
