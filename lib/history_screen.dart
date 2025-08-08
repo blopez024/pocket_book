@@ -31,12 +31,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         setState(() {
           _isLoading = false;
           if (event.snapshot.exists && event.snapshot.value != null) {
-            // Firebase Realtime Database often returns Map<Object?, Object?>
-            // So we need to carefully cast it.
             final dynamic data = event.snapshot.value;
             if (data is Map) {
-              _transactions = data.map((key, value) =>
-                  MapEntry(key.toString(), value as Map<String, dynamic>));
+              // Correctly convert the inner map for each transaction
+              _transactions = data.map((key, value) {
+                if (value is Map) {
+                  return MapEntry(key.toString(), Map<String, dynamic>.from(value));
+                } else {
+                  // Handle cases where a transaction might not be a map
+                  print('Warning: Transaction data for key $key is not a Map: $value');
+                  return MapEntry(key.toString(), <String, dynamic>{}); // Or some other error handling
+                }
+              });
             } else {
               _transactions = {}; // Or handle unexpected data type
             }
@@ -58,7 +64,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     // Handle case where stream is null (e.g., user not logged in in DatabaseService)
-    if (_dbService.getTransactionsStream() == null && mounted) {
+    // Placed this check after attempting to listen, to ensure isLoading is set if stream is immediately null.
+    // However, it might be better to check _dbService.getTransactionsStream() before even assigning to _transactionsSubscription
+    // For now, if the stream was null, the listen() call would do nothing and _isLoading might remain true.
+    // Let's refine this:
+    if (_dbService.getTransactionsStream() == null && mounted && _isLoading) { // only if still loading
         setState(() {
             _isLoading = false;
             _error = "Could not fetch transactions. User may not be logged in.";
@@ -82,9 +92,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Convert map to list and sort by date (descending)
-    // This assumes 'date' is a String in ISO8601 format.
-    // For more robust sorting, consider storing dates as timestamps or using DateTime objects.
     List<MapEntry<String, dynamic>> sortedTransactions = _transactions.entries.toList()
       ..sort((a, b) {
         String dateA = a.value['date'] as String? ?? '';
@@ -149,7 +156,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       itemCount: transactionsList.length,
       itemBuilder: (context, index) {
         final transactionEntry = transactionsList[index];
-        // final transactionId = transactionEntry.key; // If you need the ID
         final transaction = transactionEntry.value;
 
         final String type = transaction['type'] as String? ?? 'N/A';
@@ -158,7 +164,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final String dateStr = transaction['date'] as String? ?? 'Unknown Date';
         final String note = transaction['note'] as String? ?? '';
 
-        // Basic date formatting (consider intl package for better formatting)
         String formattedDate = dateStr;
         try {
           final dateTime = DateTime.tryParse(dateStr);

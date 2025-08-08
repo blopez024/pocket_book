@@ -112,7 +112,6 @@ class _OverviewScreenState extends State<OverviewScreen> {
 
 
   void _processTransactions(DataSnapshot snapshot) {
-    print("DEBUG: Full snapshot value: ${snapshot.value}");
     double currentMonthIncome = 0;
     double currentMonthExpenses = 0;
     Map<String, double> categoryExpenses = {};
@@ -133,12 +132,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         }
 
         if (transactionDate.year == now.year && transactionDate.month == now.month) {
-          
-          print("Raw amount value: ${transaction['amount']}");
-          print("Raw amount type: ${transaction['amount'].runtimeType}");
           final amount = (transaction['amount'] as num).toDouble();
-          print("Converted amount: $amount");
-
           final type = transaction['type'] as String?;
           final category = transaction['category'] as String?;
 
