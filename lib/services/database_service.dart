@@ -100,4 +100,12 @@ class DatabaseService {
     DatabaseReference userTransactionsRef = _database.ref("users/$_userId/transactions");
     return userTransactionsRef.onValue;
   }
+
+  // Add this method inside your DatabaseService class in lib/services/database_service.dart
+
+  Future<DataSnapshot> getUserTransactionsSnapshot() async {
+    if (_userId == null) throw Exception("User not logged in");
+    DatabaseReference userTransactionsRef = _database.ref("users/$_userId/transactions");
+    return userTransactionsRef.get();
+  }
 }
