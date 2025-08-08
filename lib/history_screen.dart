@@ -18,6 +18,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   String? _error;
 
+  // Define styles for categories (icon and color)
+  final Map<String, ({IconData icon, Color color})> _categoryStyles = {
+    'Salary': (icon: Icons.attach_money, color: Colors.green.shade300),
+    'Rent': (icon: Icons.home, color: Colors.orange.shade900),
+    'Groceries': (icon: Icons.shopping_cart, color: Colors.blue.shade900),
+    'Phone': (icon: Icons.phone, color: Colors.purple.shade300),
+    'Utilities': (icon: Icons.lightbulb, color: Colors.yellow.shade900),
+    'Transportation': (icon: Icons.directions_car, color: Colors.teal.shade900),
+    'Entertainment': (icon: Icons.movie, color: Colors.pink.shade300),
+    'Savings': (icon: Icons.savings, color: Colors.lightGreen.shade400),
+    'Dining Out': (icon: Icons.restaurant, color: Colors.red.shade300),
+    'Health': (icon: Icons.healing, color: Colors.indigo.shade300),
+    'Freelance': (icon: Icons.work, color: Colors.cyan.shade300),
+    'Gym Membership': (icon: Icons.fitness_center, color: Colors.lime.shade400),
+    'Pet Supplies': (icon: Icons.pets, color: Colors.brown.shade300),
+    'Childcare': (icon: Icons.child_friendly, color: Colors.amber.shade400),
+    'Coffee': (icon: Icons.local_cafe, color: Colors.brown.shade400),
+    'Other': (icon: Icons.category, color: Colors.grey.shade400),
+  };
+
+  IconData _getCategoryIcon(String category) {
+    return _categoryStyles[category]?.icon ?? Icons.help_outline; // Default icon
+  }
+
+  Color _getCategoryColor(String category) {
+    return _categoryStyles[category]?.color ?? Colors.grey; // Default color
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,23 +61,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
           if (event.snapshot.exists && event.snapshot.value != null) {
             final dynamic data = event.snapshot.value;
             if (data is Map) {
-              // Correctly convert the inner map for each transaction
               _transactions = data.map((key, value) {
                 if (value is Map) {
                   return MapEntry(key.toString(), Map<String, dynamic>.from(value));
                 } else {
-                  // Handle cases where a transaction might not be a map
                   print('Warning: Transaction data for key $key is not a Map: $value');
-                  return MapEntry(key.toString(), <String, dynamic>{}); // Or some other error handling
+                  return MapEntry(key.toString(), <String, dynamic>{});
                 }
               });
             } else {
-              _transactions = {}; // Or handle unexpected data type
+              _transactions = {};
             }
             _error = null;
           } else {
             _transactions = {};
-            _error = null; // Or set a specific "no data" message if preferred
+            _error = null;
           }
         });
       }
@@ -63,12 +89,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     });
 
-    // Handle case where stream is null (e.g., user not logged in in DatabaseService)
-    // Placed this check after attempting to listen, to ensure isLoading is set if stream is immediately null.
-    // However, it might be better to check _dbService.getTransactionsStream() before even assigning to _transactionsSubscription
-    // For now, if the stream was null, the listen() call would do nothing and _isLoading might remain true.
-    // Let's refine this:
-    if (_dbService.getTransactionsStream() == null && mounted && _isLoading) { // only if still loading
+    if (_dbService.getTransactionsStream() == null && mounted && _isLoading) {
         setState(() {
             _isLoading = false;
             _error = "Could not fetch transactions. User may not be logged in.";
@@ -100,13 +121,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       });
 
     return Scaffold(
-      backgroundColor: Colors.lightBlue[50], // Consistent background color
+      backgroundColor: Colors.lightBlue[50],
       appBar: AppBar(
         title: const Text(
           'Transaction History',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.blue[700], // Consistent AppBar color
+        backgroundColor: Colors.blue[700],
         elevation: 0,
         actions: [
           IconButton(
@@ -162,7 +183,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final num amount = transaction['amount'] as num? ?? 0;
         final String category = transaction['category'] as String? ?? 'Uncategorized';
         final String dateStr = transaction['date'] as String? ?? 'Unknown Date';
-        final String note = transaction['note'] as String? ?? '';
+        String note = transaction['note'] as String? ?? '';
+        String displayNote = note;
+        if (note.length > 20) {
+          displayNote = '${note.substring(0, 20)}...';
+        }
 
         String formattedDate = dateStr;
         try {
@@ -181,33 +206,50 @@ class _HistoryScreenState extends State<HistoryScreen> {
           margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
           child: ListTile(
             leading: Icon(
-              isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-              color: isIncome ? Colors.green[700] : Colors.red[700],
+              _getCategoryIcon(category),
+              color: _getCategoryColor(category),
               size: 30,
             ),
             title: Text(
               category,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(note.isNotEmpty ? note : 'No note', style: TextStyle(color: Colors.grey[600])),
+            subtitle: Text(displayNote.isNotEmpty ? displayNote : 'No note', style: TextStyle(color: Colors.grey[600])),
             trailing: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '${isIncome ? "+" : "-"}\$${amount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: isIncome ? Colors.green[700] : Colors.red[700],
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min, // Important for the Row
+                  crossAxisAlignment: CrossAxisAlignment.center, // Vertically aligns text and icon in the row
+                  children: [
+                    // Amount Text
+                    Text(
+                      '${isIncome ? "+" : "-"}\$${amount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isIncome ? Colors.green[700] : Colors.red[700],
+                      ),
+                    ),
+                    const SizedBox(width: 4), // Space between amount and arrow
+                    // Arrow Icon
+                    Icon(
+                      isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: isIncome ? Colors.green[700] : Colors.red[700],
+                      size: 15, // Keeping the reduced size
+                    ),
+                  ],
                 ),
+                // Date Text - remains below the Row
                 Text(
                   formattedDate,
                   style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
-            ),
+            )
+            ,
           ),
         );
       },
