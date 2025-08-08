@@ -23,13 +23,12 @@ class _OverviewScreenState extends State<OverviewScreen> {
   Map<String, double> _expenseCategorySummaries = {};
 
   // Define styles for categories (icon and color)
-  // TODO: Expand this map with all your categories and preferred styles
   final Map<String, ({IconData icon, Color color})> _categoryStyles = {
     'Salary': (icon: Icons.attach_money, color: Colors.green.shade300),
     'Rent': (icon: Icons.home, color: Colors.orange.shade900),
-    'Groceries': (icon: Icons.shopping_cart, color: Colors.blue.shade300),
+    'Groceries': (icon: Icons.shopping_cart, color: Colors.blue.shade900),
     'Phone': (icon: Icons.phone, color: Colors.purple.shade300),
-    'Utilities': (icon: Icons.lightbulb, color: Colors.yellow.shade700),
+    'Utilities': (icon: Icons.lightbulb, color: Colors.yellow.shade900),
     'Transportation': (icon: Icons.directions_car, color: Colors.teal.shade900),
     'Entertainment': (icon: Icons.movie, color: Colors.pink.shade300),
     'Savings': (icon: Icons.savings, color: Colors.lightGreen.shade400),
@@ -134,8 +133,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         }
 
         if (transactionDate.year == now.year && transactionDate.month == now.month) {
-          // final amount = (transaction['amount'] as num).toDouble();
-
+          
           print("Raw amount value: ${transaction['amount']}");
           print("Raw amount type: ${transaction['amount'].runtimeType}");
           final amount = (transaction['amount'] as num).toDouble();
@@ -200,7 +198,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _buildBody() {
+ Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -244,7 +242,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
       ));
     }
-    if (pieChartSections.isEmpty) { // Case where income and expenses are both zero, but maybe other data exists
+    if (pieChartSections.isEmpty) {
       pieChartSections.add(PieChartSectionData(
         color: Colors.grey.shade300,
         value: 1,
@@ -254,120 +252,132 @@ class _OverviewScreenState extends State<OverviewScreen> {
       ));
     }
 
-
     double leftover = _totalIncome - _totalExpenses;
 
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        Text(
-          'Current Month Summary',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue[800]),
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 200,
-          child: PieChart(
-            PieChartData(
-              sections: pieChartSections,
-              borderData: FlBorderData(show: false),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  // Handle touch events if needed
-                },
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16.0),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate.fixed([
+              Text(
+                'Current Month Summary',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue[800]),
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 50),
-        // Simple Legend
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_totalIncome > 0) Indicator(color: Colors.green.shade400, text: 'Income', isSquare: false),
-            if (_totalIncome > 0 && _totalExpenses > 0) const SizedBox(width: 10),
-            if (_totalExpenses > 0) Indicator(color: Colors.red.shade400, text: 'Expenses', isSquare: false),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Leftover:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
-                Text(
-                  '\$${leftover.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: leftover >= 0 ? Colors.green.shade600 : Colors.red.shade600,
+              const SizedBox(height: 30),
+              SizedBox(
+                height: 200,
+                child: PieChart(
+                  PieChartData(
+                    sections: pieChartSections,
+                    borderData: FlBorderData(show: false),
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 40,
+                    pieTouchData: PieTouchData(
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                        // Handle touch events if needed
+                      },
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        if (_expenseCategorySummaries.isNotEmpty) ...[
-          Text(
-            'Expense Categories',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue[800]),
-          ),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.5, // Adjust for better card layout
-            ),
-            itemCount: _expenseCategorySummaries.length,
-            itemBuilder: (context, index) {
-              final category = _expenseCategorySummaries.keys.elementAt(index);
-              final amount = _expenseCategorySummaries[category]!;
-              final icon = _getCategoryIcon(category);
-              final color = _getCategoryColor(category);
-
-              return Card(
-                color: color.withOpacity(0.15), // Light background tint of category color
-                elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              const SizedBox(height: 50),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_totalIncome > 0) Indicator(color: Colors.green.shade400, text: 'Income', isSquare: false),
+                  if (_totalIncome > 0 && _totalExpenses > 0) const SizedBox(width: 10),
+                  if (_totalExpenses > 0) Indicator(color: Colors.red.shade400, text: 'Expenses', isSquare: false),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Card(
+                elevation: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(icon, size: 30, color: color),
-                      const SizedBox(height: 8),
+                      Text('Leftover:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[700])),
                       Text(
-                        category,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '\$${amount.toStringAsFixed(2)}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                        '\$${leftover.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: leftover >= 0 ? Colors.green.shade600 : Colors.red.shade600,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 20),
+              if (_expenseCategorySummaries.isNotEmpty)
+                Text(
+                  'Expense Categories',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue[800]),
+                ),
+              if (_expenseCategorySummaries.isNotEmpty)
+                const SizedBox(height: 10),
+            ]),
           ),
-        ],
+        ),
+        if (_expenseCategorySummaries.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0), // Keep horizontal padding for the grid
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.5, // Adjust for better card layout
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (BuildContext context, int index) {
+                  final category = _expenseCategorySummaries.keys.elementAt(index);
+                  final amount = _expenseCategorySummaries[category]!;
+                  final icon = _getCategoryIcon(category);
+                  final color = _getCategoryColor(category);
+
+                  return Card(
+                    color: color.withOpacity(0.15),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(icon, size: 30, color: color),
+                          const SizedBox(height: 8),
+                          Text(
+                            category,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '\$${amount.toStringAsFixed(2)}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                childCount: _expenseCategorySummaries.length,
+              ),
+            ),
+          ),
+         // Add a final padding at the bottom if needed for spacing
+         SliverPadding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+         ),
       ],
     );
   }
