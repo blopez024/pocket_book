@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+// If not using named routes for AppScaffold, you might need:
+// import 'package:pocket_book/app_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,15 +10,14 @@ class LoginScreen extends StatefulWidget {
   LoginScreenState createState() => LoginScreenState();
 }
 
-// Changed _LoginScreenState to LoginScreenState
-class LoginScreenState extends State<LoginScreen>  {
+class LoginScreenState extends State<LoginScreen> {
   final _auth = FirebaseAuth.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
+  bool _isLoading = false;
 
   Future<void> _signIn() async {
-    // Trim input to remove leading/trailing whitespace
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
@@ -27,9 +28,8 @@ class LoginScreenState extends State<LoginScreen>  {
       return;
     }
 
-    // Basic email validation using a simple regex
     final bool isValidEmail = RegExp(
-        r"^[a-zA-Z0-9_.±]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$")
+            r"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
         .hasMatch(email);
 
     if (!isValidEmail) {
@@ -46,47 +46,47 @@ class LoginScreenState extends State<LoginScreen>  {
       return;
     }
 
-    // If all validations pass, clear any previous field-specific error messages
-    // and attempt to sign in.
-    try {
-      setState(() {
-        _errorMessage = null; // Clear previous error messages
-      });
-      await _auth.signInWithEmailAndPassword(
-        email: email, // Use the trimmed email
-        password: password, // Use the trimmed password
-      );
-      // Navigate to home screen or handle successful login
-      // Navigator.pushReplacementNamed(context, '/home'); // Example navigation
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-      // print('Failed to sign in: ${e.message}');
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // Successful login, navigate to the main app screen
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/app');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message ?? "An unknown error occurred.";
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(title: Text('Login')), // Optional: Remove or style AppBar
-      body: Container( // Added Container for background color
-        color: Colors.lightBlue[50], // Example background color
-        padding: const EdgeInsets.all(24.0), // Increased padding
-        child: Center( // Center the content
-          child: SingleChildScrollView( // Added for smaller screens
+      body: Container(
+        color: Colors.lightBlue[50],
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Make children take full width
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // Placeholder for Logo - Add your logo in assets folder
-                // and update pubspec.yaml
-                // Image.asset('assets/logo.png', height: 150),
-                // SizedBox(height: 48),
-
                 Text(
                   'Pocket Book',
                   textAlign: TextAlign.center,
@@ -97,7 +97,6 @@ class LoginScreenState extends State<LoginScreen>  {
                   ),
                 ),
                 SizedBox(height: 48),
-
                 if (_errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -121,7 +120,7 @@ class LoginScreenState extends State<LoginScreen>  {
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                SizedBox(height: 16), // Increased spacing
+                SizedBox(height: 16),
                 TextField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -136,27 +135,32 @@ class LoginScreenState extends State<LoginScreen>  {
                   ),
                   obscureText: true,
                 ),
-                SizedBox(height: 24), // Increased spacing
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700], // Button color
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
-                    textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
+                SizedBox(height: 24),
+                if (_isLoading)
+                  Center(child: CircularProgressIndicator())
+                else
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      textStyle:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
                     ),
+                    onPressed: _signIn,
+                    child: Text('Login', style: TextStyle(color: Colors.white)),
                   ),
-                  onPressed: _signIn,
-                  child: Text('Login', style: TextStyle(color: Colors.white)),
-                ),
                 SizedBox(height: 12),
                 TextButton(
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () {
                     Navigator.pushNamed(context, '/register');
                   },
                   child: Text(
                     'Don\'t have an account? Register',
-                    style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.blue[700], fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

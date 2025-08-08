@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pocket_book/services/database_service.dart';
+// If not using named routes for AppScaffold, you might need:
+// import 'package:pocket_book/app_scaffold.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key}); // Added key, made const
+  const RegistrationScreen({super.key});
 
   @override
-  // Changed _RegistrationScreenState to RegistrationScreenState
   RegistrationScreenState createState() => RegistrationScreenState();
 }
 
-// Changed _RegistrationScreenState to RegistrationScreenState
 class RegistrationScreenState extends State<RegistrationScreen> {
   final _auth = FirebaseAuth.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final DatabaseService _dbService = DatabaseService();
   String? _errorMessage;
+  bool _isLoading = false;
 
   Future<void> _register() async {
     final String email = _emailController.text.trim();
@@ -29,9 +32,8 @@ class RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    // Basic email validation using a simple regex
     final bool isValidEmail = RegExp(
-            r"^[a-zA-Z0-9_.±]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$") // Using the regex from your initial file content
+            r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
         .hasMatch(email);
 
     if (!isValidEmail) {
@@ -62,54 +64,76 @@ class RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    // If all validations pass, clear any previous error messages
-    // and attempt to register.
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      setState(() {
-        _errorMessage = null; // Clear previous error messages
-      });
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      // Navigate to home screen or login screen after successful registration
-      // Navigator.pushReplacementNamed(context, '/home'); // Example navigation
-      if (mounted) { // Check if the widget is still in the tree
-        Navigator.pop(context); // Go back to login screen after registration
+
+      if (userCredential.user != null) {
+        // For simplicity, using email's local part as name. Consider adding a name field.
+        String name = email.split('@')[0]; 
+        await _dbService.createUserProfile(email, name);
+      }
+
+      // Navigate to the main app screen and remove all previous routes
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/app', (Route<dynamic> route) => false);
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
-
-      // print('Failed to register: ${e.message}');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message ?? "An unknown error occurred.";
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "An unexpected error occurred during profile creation.";
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(title: Text('Register')), // Optional: Consistent with login screen
-      body: Container( // Added Container for background color
-        color: Colors.lightBlue[50], // Example background color
-        padding: const EdgeInsets.all(24.0), // Increased padding
-        child: Center( // Center the content
-          child: SingleChildScrollView( // Added for smaller screens
+      appBar: AppBar(
+        title: Text('Register', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.blue[700],
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: Container(
+        color: Colors.lightBlue[50],
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Make children take full width
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(
-                  'Create Account', // Changed title for registration screen
+                 Text(
+                  'Create Account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.blue[800],
                   ),
                 ),
-                SizedBox(height: 32), // Adjusted spacing
-
+                SizedBox(height: 32),
                 if (_errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -138,8 +162,8 @@ class RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    hintText: 'Enter your password',
-                    prefixIcon: Icon(Icons.lock_outline), // Different icon for variety
+                    hintText: 'Enter your password (min. 6 characters)',
+                    prefixIcon: Icon(Icons.lock),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
@@ -154,7 +178,7 @@ class RegistrationScreenState extends State<RegistrationScreen> {
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     hintText: 'Re-enter your password',
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: Icon(Icons.lock_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
@@ -164,26 +188,31 @@ class RegistrationScreenState extends State<RegistrationScreen> {
                   obscureText: true,
                 ),
                 SizedBox(height: 24),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700], // Button color
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
-                    textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
+                if (_isLoading)
+                  Center(child: CircularProgressIndicator())
+                else
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      textStyle:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
                     ),
+                    onPressed: _register,
+                    child: Text('Register', style: TextStyle(color: Colors.white)),
                   ),
-                  onPressed: _register,
-                  child: Text('Register', style: TextStyle(color: Colors.white)),
-                ),
                 SizedBox(height: 12),
                 TextButton(
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () {
                     Navigator.pop(context); // Go back to login screen
                   },
                   child: Text(
                     'Already have an account? Login',
-                    style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.blue[700], fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
