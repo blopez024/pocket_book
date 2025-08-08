@@ -10,6 +10,14 @@ class AddEntryScreen extends StatefulWidget {
   State<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
+class _CategoryUIData {
+  final IconData icon;
+  final Color color;
+
+  _CategoryUIData({required this.icon, required this.color});
+}
+
+
 enum TransactionType { expense, income }
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
@@ -42,6 +50,26 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     'Coffee',
     'Other'
   ];
+
+  // Define styles for categories (icon and color)
+  final Map<String, ({IconData icon, Color color})> _categoryStyles = {
+    'Salary': (icon: Icons.attach_money, color: Colors.green.shade300),
+    'Rent': (icon: Icons.home, color: Colors.orange.shade900),
+    'Groceries': (icon: Icons.shopping_cart, color: Colors.blue.shade900),
+    'Phone': (icon: Icons.phone, color: Colors.purple.shade300),
+    'Utilities': (icon: Icons.lightbulb, color: Colors.yellow.shade900),
+    'Transportation': (icon: Icons.directions_car, color: Colors.teal.shade900),
+    'Entertainment': (icon: Icons.movie, color: Colors.pink.shade300),
+    'Savings': (icon: Icons.savings, color: Colors.lightGreen.shade400),
+    'Dining Out': (icon: Icons.restaurant, color: Colors.red.shade300),
+    'Health': (icon: Icons.healing, color: Colors.indigo.shade300),
+    'Freelance': (icon: Icons.work, color: Colors.cyan.shade300),
+    'Gym Membership': (icon: Icons.fitness_center, color: Colors.lime.shade400),
+    'Pet Supplies': (icon: Icons.pets, color: Colors.brown.shade300),
+    'Childcare': (icon: Icons.child_friendly, color: Colors.amber.shade400),
+    'Coffee': (icon: Icons.local_cafe, color: Colors.brown.shade400),
+    'Other': (icon: Icons.category, color: Colors.grey.shade400),
+  };
 
 
   Future<void> _signOut() async {
@@ -139,6 +167,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   hintText: 'Enter amount (e.g., 25.50)',
                   icon: Icon(Icons.attach_money),
                   border: OutlineInputBorder(),
+                  filled: true, // Make field white
+                  fillColor: Colors.white, // Make field white
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
@@ -162,16 +192,39 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   labelText: 'Category',
                   icon: Icon(Icons.category),
                   border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
                 value: _selectedCategory,
                 hint: const Text('Select a category'),
                 isExpanded: true,
                 items: _categories.map((String category) {
+                  final style = _categoryStyles[category] ?? _categoryStyles['Other']!; // Fallback to 'Other' style
                   return DropdownMenuItem<String>(
                     value: category,
-                    child: Text(category),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(style.icon, color: style.color, size: 24), // Icon with color
+                        const SizedBox(width: 10),
+                        Text(category, style: const TextStyle(fontSize: 16.0)), // Larger text
+                      ],
+                    ),
                   );
                 }).toList(),
+                selectedItemBuilder: (BuildContext context) {
+                  return _categories.map<Widget>((String category) {
+                    final style = _categoryStyles[category] ?? _categoryStyles['Other']!; // Fallback for safety
+                    return Center( // Center the selected item
+                      child: Row(
+                        children: <Widget>[
+                          Icon(style.icon, color: style.color, size: 20), // Slightly smaller icon for the button face
+                          const SizedBox(width: 8),
+                          Text(category, style: const TextStyle(fontSize: 16.0, color: Colors.black87)), // Larger text
+                        ],
+                      ),
+                    );
+                  }).toList();
+                },
                 onChanged: (String? newValue) {
                   setState(() {
                     _selectedCategory = newValue;
@@ -189,6 +242,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   hintText: 'Enter a short note',
                   icon: Icon(Icons.note),
                   border: OutlineInputBorder(),
+                  filled: true, // Make field white
+                  fillColor: Colors.white, // Make field white
                 ),
                 maxLength: 30,
                 inputFormatters: [
@@ -197,40 +252,32 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Type Radio Buttons (Expense/Income)
+              // Type Selection (Expense/Income)
               const Text('Type:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: RadioListTile<TransactionType>(
-                      title: const Text('Expense'),
+              const SizedBox(height: 8),
+              SegmentedButton<TransactionType>(
+                segments: const <ButtonSegment<TransactionType>>[
+                  ButtonSegment<TransactionType>(
                       value: TransactionType.expense,
-                      groupValue: _selectedType,
-                      onChanged: (TransactionType? value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedType = value;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<TransactionType>(
-                      title: const Text('Income'),
+                      label: Text('Expense'),
+                      icon: Icon(Icons.arrow_downward)),
+                  ButtonSegment<TransactionType>(
                       value: TransactionType.income,
-                      groupValue: _selectedType,
-                      onChanged: (TransactionType? value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedType = value;
-                          });
-                        }
-                      },
-                    ),
-                  ),
+                      label: Text('Income'),
+                      icon: Icon(Icons.arrow_upward)),
                 ],
+                selected: <TransactionType>{_selectedType},
+                onSelectionChanged: (Set<TransactionType> newSelection) {
+                  setState(() {
+                    _selectedType = newSelection.first;
+                  });
+                },
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue[700],
+                  selectedForegroundColor: Colors.white,
+                  selectedBackgroundColor: Colors.blue[600],
+                ),
               ),
               const SizedBox(height: 30),
 
